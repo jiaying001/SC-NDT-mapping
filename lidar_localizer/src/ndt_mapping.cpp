@@ -761,7 +761,7 @@ void ndt_mapping::performLoopClosure()
 
 
   std::lock_guard<std::mutex> lock(mtx_);
-  gtSAMgraph_.add(BetweenFactor<Pose3>(latest_history_frame_id_, closest_history_frame_id_, pose_from.between(pose_to), constraint_noise_)); //robustNoiseModel
+  gtSAMgraph_.add(BetweenFactor<Pose3>(latest_history_frame_id_, closest_history_frame_id_, pose_from.between(pose_to), robustNoiseModel)); //robustNoiseModel  constraint_noise_
   isam->update(gtSAMgraph_);
   isam->update();
   gtSAMgraph_.resize(0);
@@ -832,7 +832,7 @@ void ndt_mapping::performLoopClosure()
 
 
   std::lock_guard<std::mutex> lock(mtx_);
-  gtSAMgraph_.add(BetweenFactor<Pose3>(SClatest_history_frame_id_, SCclosest_history_frame_id_, pose_from.between(pose_to), constraint_noise_)); //robustNoiseModel
+  gtSAMgraph_.add(BetweenFactor<Pose3>(SClatest_history_frame_id_, SCclosest_history_frame_id_, pose_from.between(pose_to), robustNoiseModel)); //robustNoiseModel
   isam->update(gtSAMgraph_);
   isam->update();
   gtSAMgraph_.resize(0);
@@ -915,6 +915,7 @@ bool ndt_mapping::detectLoopClosure()
       continue;
     }
     *SCtmp_cloud += *transformPointCloud(cloud_keyframes_[j], cloud_keyposes_6d_->points[j]);
+    //*SCtmp_cloud += *transformPointCloud(cloud_keyframes_[j], cloud_keyposes_6d_->points[0]);
     }
 
     ds_history_keyframes_.setInputCloud(SCtmp_cloud);
