@@ -1,0 +1,44 @@
+<launch>
+  <node pkg="rosbag" type="play" name="rosbag_play" args="--clock -r 0.5 $(env HOME)/se2_ws/rosbag/sensors_data_2022-10-05-12-34-16.bag"/> 
+
+  <param name="use_sim_time" value="true" />
+  <param name="use_odom" value="true" />
+  <param name="incremental_voxel_update" value="false" />
+  <param name="ndt_res" value="0.8" /> <!--1.0-->>
+  <param name="step_size" value="0.1" />
+  <param name="trans_eps" value="0.01" />
+  <param name="max_iters" value="30" />
+  <param name="voxel_leaf_size" value="0.6" /> <!--1.0 in software/ 2.0 is default-->
+  <param name="min_scan_range" value="0.5" />
+  <param name="max_scan_range" value="130.0" />
+  <param name="min_add_scan_shift" value="1.0" />
+  <param name="min_add_angle_shift" value="0.2" />
+  <param name="history_search_radius" value="15.0" />
+  <param name="history_search_num" value="25" />
+  <param name="history_fitness_score" value="0.3" />
+  <param name="ds_history_size" value="1.0" />
+  <param name="surround_search_num" value="50" />
+  <param name="loop_closure_enabled" value= "true" />
+  <param name="savePCD" value="true" />
+  <param name="save_dir" value="/home/" />
+
+  <param name="tf_x" value="0.49" />
+  <param name="tf_y" value="0.0" />
+  <param name="tf_z" value="0.55" />
+  <param name="tf_yaw" value="0.0" />
+  <param name="tf_pitch" value="0.03" />
+  <param name="tf_roll" value="0.0" />
+
+
+  <node pkg="lidar_localizer" type="ndt_mapping" name="ndt_mapping" >
+  </node>
+  <!--  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_localizer)/rviz/test.rviz" />
+
+    <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_loam" ns="base_link" >
+          <param name="/target_frame_name" value="map" />
+          <param name="/source_frame_name" value="base_link" />
+          <param name="/trajectory_update_rate" value="100.0" />
+          <param name="/trajectory_publish_rate" value="100.0" />
+      </node> -->
+
+</launch>
