@@ -25,6 +25,7 @@ ndt_mapping::ndt_mapping(ros::NodeHandle nh, ros::NodeHandle pnh) : nh_(nh), pnh
   nh_.param("history_search_radius",history_search_radius_ ,10.0);
   nh_.param("history_search_num",history_search_num_ , 20);
   nh_.param("history_fitness_score", history_fitness_score_, 0.3 );
+  nh_.param("SChistory_fitness_score", SChistory_fitness_score_, 1.5 );
   nh_.param("ds_history_size",ds_history_size_ , 1.0);
   nh_.param<std::string>("save_dir", save_dir_, "/home/");
   nh_.param("savePCD", savePCD_, true);
@@ -51,6 +52,7 @@ ndt_mapping::ndt_mapping(ros::NodeHandle nh, ros::NodeHandle pnh) : nh_(nh), pnh
   std::cout << "history_search_radius: " <<  history_search_radius_<< std::endl;
   std::cout << "history_search_num: " << history_search_num_ << std::endl;
   std::cout << "history_fitness_score: " <<  history_fitness_score_<< std::endl;
+  std::cout << "SChistory_fitness_score: " <<  SChistory_fitness_score_<< std::endl;
   std::cout << "ds_history_size: " <<ds_history_size_  << std::endl;
 
 
@@ -128,6 +130,10 @@ bool ndt_mapping::init()
 
   scan_ptr.reset(new pcl::PointCloud<pcl::PointXYZI>());
   map_ptr.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  laserCloudRaw.reset(new pcl::PointCloud<pcl::PointXYZI>()); // sc
+  laserCloudRawDS.reset(new pcl::PointCloud<pcl::PointXYZI>()); // sc
+  downSizeFilterScancontext.setLeafSize(0.5, 0.5, 0.5);
+
   filtered_scan_ptr.reset(new pcl::PointCloud<pcl::PointXYZI>());
   current_pose_.x = current_pose_.y = current_pose_.z = 0.0;current_pose_.roll = current_pose_.pitch = current_pose_.yaw = 0.0;
   previous_pose_.x = previous_pose_.y = previous_pose_.z = 0.0;previous_pose_.roll = previous_pose_.pitch = previous_pose_.yaw = 0.0;
@@ -221,6 +227,13 @@ void ndt_mapping::points_callback(const sensor_msgs::PointCloud2::ConstPtr& inpu
 
   scan_ptr->clear();
   pcl::fromROSMsg(*input, *tmp_cloud);
+
+  laserCloudRaw->clear();
+  pcl::fromROSMsg(*input, *laserCloudRaw);
+
+  laserCloudRawDS->clear();
+  downSizeFilterScancontext.setInputCloud(laserCloudRaw);
+  downSizeFilterScancontext.filter(*laserCloudRawDS);
 
 // trans to baselink_frame
   pcl::transformPointCloud(*tmp_cloud, *scan_ptr, tf_ltob_); //tf_btol_ tf_ltob_
@@ -509,7 +522,7 @@ bool ndt_mapping::saveKeyframesAndFactor()
     const auto &pre_pose_ = cloud_keyposes_6d_->points[cloud_keyposes_3d_->points.size() - 1];
     double keyframedist = sqrt(pow(current_pose_.x - pre_pose_.x, 2) + pow(current_pose_.y - pre_pose_.y, 2) + pow(pre_pose_.z - pre_pose_.z, 2));
             
-    if ((keyframedist < min_add_scan_shift_)&&(abs(roll)<min_add_angle_shift_)&&(abs(pitch)<min_add_angle_shift_)&&(abs(yaw)<min_add_angle_shift_))
+    if (keyframedist < min_add_scan_shift_)//&&(abs(roll)<min_add_angle_shift_)&&(abs(pitch)<min_add_angle_shift_)&&(abs(yaw)<min_add_angle_shift_))
     {     
       return false;
     }
@@ -579,8 +592,10 @@ bool ndt_mapping::saveKeyframesAndFactor()
     Scan Context loop detector 
   */
    pcl::PointCloud<pcl::PointXYZI>::Ptr thisRawCloudKeyFrame(new pcl::PointCloud<pcl::PointXYZI>());
-   pcl::copyPointCloud(*scan_ptr,  *thisRawCloudKeyFrame);
-   scManager.makeAndSaveScancontextAndKeys(*thisRawCloudKeyFrame);
+  //  pcl::copyPointCloud(*scan_ptr,  *thisRawCloudKeyFrame);
+  //  scManager.makeAndSaveScancontextAndKeys(*thisRawCloudKeyFrame);
+  pcl::copyPointCloud(*laserCloudRawDS,  *thisRawCloudKeyFrame);
+  scManager.makeAndSaveScancontextAndKeys(*thisRawCloudKeyFrame);
 
 
   cloud_keyframes_.push_back(cur_keyframe);
@@ -738,14 +753,14 @@ void ndt_mapping::performLoopClosure()
 
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed = end - start;
-  // std::cout << "[RS] ICP fit score: " << icp.getFitnessScore() << std::endl;
+   std::cout << "[RS] ICP fit score: " << icp.getFitnessScore() << std::endl;
   if( (has_converged == false )|| (fitness_score > history_fitness_score_))
   {
     isValidRSloopFactor = false;
     return;
   }
   else {
-  //    std::cout << "[RS] The detected loop factor is added between Current [ " << latest_history_frame_id_ << " ] and RS nearest [ " << closest_history_frame_id_ << " ]" << std::endl;
+      std::cout << "[RS] The detected loop factor is added between Current [ " << latest_history_frame_id_ << " ] and RS nearest [ " << closest_history_frame_id_ << " ]" << std::endl;
       isValidRSloopFactor = true;
   }
 
@@ -811,7 +826,7 @@ void ndt_mapping::performLoopClosure()
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed = end - start;
   std::cout << "[SC] ICP fit score: " << icp.getFitnessScore() << std::endl;
-  if( (has_converged == false )|| (fitness_score > history_fitness_score_))
+  if( (has_converged == false )|| (fitness_score > SChistory_fitness_score_))
   {
     isValidSCloopFactor = false;
     return;
@@ -930,7 +945,7 @@ bool ndt_mapping::detectLoopClosure()
 
     ds_history_keyframes_.setInputCloud(SCtmp_cloud);
     ds_history_keyframes_.filter(*SCnear_history_keyframes_);
-  }
+ }
   if ((closest_history_frame_id_ == -1)&&(SCclosest_history_frame_id_ == -1)){
     return false;
   }
