@@ -1,4 +1,8 @@
 #include "ndt_mapping.h"
+#include "Scancontext.h"
+
+// loop detector 
+SCManager scManager;
 
 ndt_mapping::ndt_mapping(ros::NodeHandle nh, ros::NodeHandle pnh) : nh_(nh), pnh_(pnh)
 {
@@ -268,7 +272,7 @@ void ndt_mapping::points_callback(const sensor_msgs::PointCloud2::ConstPtr& inpu
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud(new pcl::PointCloud<pcl::PointXYZI>);
  
-  ROS_INFO("start ndt align");
+  //ROS_INFO("start ndt align");
 
   ndt.align(*output_cloud, init_guess);
   t_localizer = ndt.getFinalTransformation();
@@ -308,7 +312,7 @@ void ndt_mapping::points_callback(const sensor_msgs::PointCloud2::ConstPtr& inpu
   {
     if (saveKeyframesAndFactor())
     {
-      std::cout<<"shift >= min_add_scan_shift_ && saveKeyframesAndFactor == true "<<std::endl;
+      //std::cout<<"shift >= min_add_scan_shift_ && saveKeyframesAndFactor == true "<<std::endl;
       pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_scan_ptr(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::transformPointCloud(*scan_ptr, *transformed_scan_ptr, t_localizer);
       *map_ptr += *transformed_scan_ptr;
@@ -335,37 +339,37 @@ void ndt_mapping::points_callback(const sensor_msgs::PointCloud2::ConstPtr& inpu
 
   current_pose_pub_.publish(current_pose_msg_);
 
-  namefilepose.open("./ndt_pose.txt",std::ios::app);
-  namefilepose<<input->header.stamp<<" ";
+  // namefilepose.open("./ndt_pose.txt",std::ios::app);
+  // namefilepose<<input->header.stamp<<" ";
         
-  namefilepose<< current_pose_msg_.pose.pose.position.x <<" ";
-  namefilepose<< current_pose_msg_.pose.pose.position.y <<" ";
-  namefilepose<< current_pose_msg_.pose.pose.position.z <<" ";
-  namefilepose<< current_pose_msg_.pose.pose.orientation.x<<" ";
-  namefilepose<< current_pose_msg_.pose.pose.orientation.y<<" ";
-  namefilepose<< current_pose_msg_.pose.pose.orientation.z<<" ";
-  namefilepose<< current_pose_msg_.pose.pose.orientation.w;
-  namefilepose<<std::endl;
-  namefilepose.close();
+  // namefilepose<< current_pose_msg_.pose.pose.position.x <<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.position.y <<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.position.z <<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.orientation.x<<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.orientation.y<<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.orientation.z<<" ";
+  // namefilepose<< current_pose_msg_.pose.pose.orientation.w;
+  // namefilepose<<std::endl;
+  // namefilepose.close();
 
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed = end - start;
-  std::cout << "-----------------------------------------------------------------" << std::endl;
-  std::cout << "Sequence number: " << input->header.seq << std::endl;
-  std::cout << "Number of scan points: " << scan_ptr->size() << " points." << std::endl;
- // std::cout << "Number of filtered scan points: " << filtered_scan_ptr->size() << " points." << std::endl;
- // std::cout << "transformed_scan_ptr: " << transformed_scan_ptr->points.size() << " points." << std::endl;
-  std::cout << "map: " << map_ptr->size() << " points." << std::endl;
-  std::cout << "NDT has converged: " << ndt.hasConverged() << std::endl;
-  std::cout << "Fitness score: " << ndt.getFitnessScore() << std::endl;
-  std::cout << "Number of iteration: " << ndt.getFinalNumIteration() << std::endl;
-  std::cout << "(x,y,z,roll,pitch,yaw):" << std::endl;
-  std::cout << "(" << current_pose_.x << ", " << current_pose_.y << ", " << current_pose_.z << ", " << current_pose_.roll
-            << ", " << current_pose_.pitch << ", " << current_pose_.yaw << ")" << std::endl;
-  std::cout << "Transformation Matrix:" << std::endl;
-  std::cout << t_localizer << std::endl;
-  std::cout << "shift: " << shift << std::endl;
-  std::cout << "-----------------------------------------------------------------" << std::endl;
+//   std::cout << "-----------------------------------------------------------------" << std::endl;
+//   std::cout << "Sequence number: " << input->header.seq << std::endl;
+//   std::cout << "Number of scan points: " << scan_ptr->size() << " points." << std::endl;
+//  // std::cout << "Number of filtered scan points: " << filtered_scan_ptr->size() << " points." << std::endl;
+//  // std::cout << "transformed_scan_ptr: " << transformed_scan_ptr->points.size() << " points." << std::endl;
+//   std::cout << "map: " << map_ptr->size() << " points." << std::endl;
+//   std::cout << "NDT has converged: " << ndt.hasConverged() << std::endl;
+//   std::cout << "Fitness score: " << ndt.getFitnessScore() << std::endl;
+//   std::cout << "Number of iteration: " << ndt.getFinalNumIteration() << std::endl;
+//   std::cout << "(x,y,z,roll,pitch,yaw):" << std::endl;
+//   std::cout << "(" << current_pose_.x << ", " << current_pose_.y << ", " << current_pose_.z << ", " << current_pose_.roll
+//             << ", " << current_pose_.pitch << ", " << current_pose_.yaw << ")" << std::endl;
+//   std::cout << "Transformation Matrix:" << std::endl;
+//   std::cout << t_localizer << std::endl;
+//   std::cout << "shift: " << shift << std::endl;
+//   std::cout << "-----------------------------------------------------------------" << std::endl;
 
   correctPoses(); //for loop closure
 }
@@ -462,7 +466,7 @@ void ndt_mapping::extractSurroundKeyframes()
       }
     }
   }
- // ROS_WARN("target_updated");
+
   if (target_updated)
   {
     map_ptr->clear(); 
@@ -495,7 +499,6 @@ bool ndt_mapping::saveKeyframesAndFactor()
  // tf::Matrix3x3(tf::Quaternion(cur_pose_ndt_.pose.pose.orientation.x, cur_pose_ndt_.pose.pose.orientation.y, cur_pose_ndt_.pose.pose.orientation.z, cur_pose_ndt_.pose.pose.orientation.w)).getRPY(roll, pitch, yaw);
   if (cloud_keyposes_3d_->points.empty())
   {
-    std::cout<<"cloud_keyposes_3d_->points.empty()"<<std::endl;
     // gtSAMgraph_.add(PriorFactor<Pose3>(0, Pose3(Rot3::Quaternion(cur_pose_ndt_.pose.pose.orientation.w, cur_pose_ndt_.pose.pose.orientation.x, cur_pose_ndt_.pose.pose.orientation.y, cur_pose_ndt_.pose.pose.orientation.z), Point3(cur_pose_ndt_.pose.pose.position.x, cur_pose_ndt_.pose.pose.position.y, cur_pose_ndt_.pose.pose.position.z)), prior_noise_));
     gtSAMgraph_.add(PriorFactor<Pose3>(0, Pose3(Rot3::RzRyRx(roll, pitch, yaw), Point3(current_pose_.x, current_pose_.y, current_pose_.z)), prior_noise_));
     initial_estimate_.insert(0, Pose3(Rot3::RzRyRx(current_pose_.roll, current_pose_.pitch, current_pose_.yaw), Point3(current_pose_.x, current_pose_.y,current_pose_.z)));
@@ -518,13 +521,18 @@ bool ndt_mapping::saveKeyframesAndFactor()
     //initial_estimate_.insert(cloud_keyposes_3d_->points.size(), Pose3(Rot3::RzRyRx(roll, pitch * 0, yaw), Point3(current_pose_.x, current_pose_.y, current_pose_.z * 0)));
    initial_estimate_.insert(cloud_keyposes_3d_->points.size(), Pose3(Rot3::RzRyRx(roll, pitch, yaw), Point3(current_pose_.x, current_pose_.y, current_pose_.z)));
   }
-
+  /**
+   * update iSAM
+   */
   isam->update(gtSAMgraph_, initial_estimate_);
   isam->update();
 
   gtSAMgraph_.resize(0);
   initial_estimate_.clear();
 
+  /**
+   * save key poses
+   */
   pcl::PointXYZI this_pose_3d;
   PointXYZIRPYT this_pose_6d;
   Pose3 latest_estimate;
@@ -543,10 +551,10 @@ bool ndt_mapping::saveKeyframesAndFactor()
   cloud_keyposes_6d_->points.push_back(this_pose_6d);
 
   // std::cout << "pre_keypose: (" << pre_keypose_.pose.pose.position.x << ", " << pre_keypose_.pose.pose.position.y << ", " << pre_keypose_.pose.pose.position.z << "; " << std::endl;
-  std::cout << "current_pose: (" << current_pose_.x << ", " << current_pose_.y << ", " << current_pose_.z << "; "
-            << roll << ", " << pitch << ", " << yaw << ")" << std::endl;
-  std::cout << "this_pose_6d: (" << this_pose_6d.x << ", " << this_pose_6d.y << ", " << this_pose_6d.z << "; "
-            << this_pose_6d.roll << ", " << this_pose_6d.pitch << ", " << this_pose_6d.yaw << ")" << std::endl;
+  // std::cout << "current_pose: (" << current_pose_.x << ", " << current_pose_.y << ", " << current_pose_.z << "; "
+  //           << roll << ", " << pitch << ", " << yaw << ")" << std::endl;
+  // std::cout << "this_pose_6d: (" << this_pose_6d.x << ", " << this_pose_6d.y << ", " << this_pose_6d.z << "; "
+  //           << this_pose_6d.roll << ", " << this_pose_6d.pitch << ", " << this_pose_6d.yaw << ")" << std::endl;
 
   if (cloud_keyposes_3d_->points.size() > 1)
   {
@@ -578,7 +586,7 @@ bool ndt_mapping::saveKeyframesAndFactor()
   cloud_keyframes_.push_back(cur_keyframe);
 
 
-  ROS_WARN("saveKeyframesAndFactor: %d points", cur_keyframe->points.size());
+  ROS_INFO("saveKeyframesAndFactor: %d points", thisRawCloudKeyFrame->points.size());
 
   return true;
 }
@@ -645,7 +653,7 @@ void ndt_mapping::correctPoses()
   if (loop_closed_)
   {
     recent_keyframes_.clear();
-    ROS_WARN("correctPoses");
+    ROS_INFO("correctPoses");
     int num_poses = isam_current_estimate_.size();
     for (int i = 0; i < num_poses; ++i)
     {
@@ -671,6 +679,7 @@ void ndt_mapping::loopClosureThread()
   ros::Rate rate(1.0);
   while (ros::ok())
   {
+    rate.sleep();
     performLoopClosure();
    // duration.sleep();
   }
@@ -689,7 +698,7 @@ void ndt_mapping::performLoopClosure()
   }
   else
   {
-    ROS_WARN("detected loop closure");
+    //ROS_INFO("detected loop closure");
   }
 
   auto start = std::chrono::system_clock::now();
@@ -729,19 +738,19 @@ void ndt_mapping::performLoopClosure()
 
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed = end - start;
-
+  // std::cout << "[RS] ICP fit score: " << icp.getFitnessScore() << std::endl;
   if( (has_converged == false )|| (fitness_score > history_fitness_score_))
   {
     isValidRSloopFactor = false;
     return;
   }
   else {
-      std::cout << "[RS] The detected loop factor is added between Current [ " << latest_history_frame_id_ << " ] and RS nearest [ " << closest_history_frame_id_ << " ]" << std::endl;
+  //    std::cout << "[RS] The detected loop factor is added between Current [ " << latest_history_frame_id_ << " ] and RS nearest [ " << closest_history_frame_id_ << " ]" << std::endl;
       isValidRSloopFactor = true;
   }
 
   if( isValidRSloopFactor == true ) {
-    ROS_WARN("RSloop closed");
+    ROS_INFO("RSloop closed");
 
   Eigen::Matrix4f t_wrong = initial_guess;
   Eigen::Matrix4f t_correct = correction_frame * t_wrong;
@@ -761,7 +770,7 @@ void ndt_mapping::performLoopClosure()
 
 
   std::lock_guard<std::mutex> lock(mtx_);
-  gtSAMgraph_.add(BetweenFactor<Pose3>(latest_history_frame_id_, closest_history_frame_id_, pose_from.between(pose_to), robustNoiseModel)); //robustNoiseModel  constraint_noise_
+  gtSAMgraph_.add(BetweenFactor<Pose3>(latest_history_frame_id_, closest_history_frame_id_, pose_from.between(pose_to), constraint_noise_)); //robustNoiseModel  constraint_noise_
   isam->update(gtSAMgraph_);
   isam->update();
   gtSAMgraph_.resize(0);
@@ -801,7 +810,7 @@ void ndt_mapping::performLoopClosure()
 
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed = end - start;
-
+  std::cout << "[SC] ICP fit score: " << icp.getFitnessScore() << std::endl;
   if( (has_converged == false )|| (fitness_score > history_fitness_score_))
   {
     isValidSCloopFactor = false;
@@ -813,7 +822,7 @@ void ndt_mapping::performLoopClosure()
   }
 
   if( isValidSCloopFactor == true ) {
-    ROS_WARN("SCloop closed");
+    ROS_INFO("SCloop closed");
 
   Eigen::Matrix4f t_wrong = initial_guess;
   Eigen::Matrix4f t_correct = correction_frame * t_wrong;
@@ -844,10 +853,10 @@ void ndt_mapping::performLoopClosure()
 
 bool ndt_mapping::detectLoopClosure()
 {
+  std::lock_guard<std::mutex> lock(mtx_);
+
   latest_keyframe_->clear();
   near_history_keyframes_->clear();
-
-  std::lock_guard<std::mutex> lock(mtx_);
 
   pcl::PointXYZI cur_pose;
   cur_pose.x = current_pose_.x;
@@ -898,12 +907,13 @@ bool ndt_mapping::detectLoopClosure()
   SCclosest_history_frame_id_ = -1; 
   auto detectResult = scManager.detectLoopClosureID(); // first: nn index, second: yaw diff 
   SCclosest_history_frame_id_ = detectResult.first;
+  //ROS_INFO("detectResult.first= %d", detectResult.first);
   yawDiffRad = detectResult.second; // not use for v1 (because pcl icp withi initial somthing wrong...)
   // if all close, reject
-  if (SCclosest_history_frame_id_ == -1){ //if ((closest_history_frame_id_ == -1)&&(SCclosest_history_frame_id_ == -1))
-      return false;
+  if (SCclosest_history_frame_id_ == -1){
+      //return false; 
    }
-
+  else{
   pcl::copyPointCloud(*transformPointCloud(cloud_keyframes_[SClatest_history_frame_id_], cloud_keyposes_6d_->points[SClatest_history_frame_id_]), *SClatest_keyframe_);
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr SCtmp_cloud(new pcl::PointCloud<pcl::PointXYZI>());
@@ -915,11 +925,14 @@ bool ndt_mapping::detectLoopClosure()
       continue;
     }
     *SCtmp_cloud += *transformPointCloud(cloud_keyframes_[j], cloud_keyposes_6d_->points[j]);
-    //*SCtmp_cloud += *transformPointCloud(cloud_keyframes_[j], cloud_keyposes_6d_->points[0]);
+    //*SCtmp_cloud += *transformPointCloud(cloud_keyframes_[j], cloud_keyposes_6d_->points[0]);  //SC-liosam confused???
     }
 
     ds_history_keyframes_.setInputCloud(SCtmp_cloud);
     ds_history_keyframes_.filter(*SCnear_history_keyframes_);
-
+  }
+  if ((closest_history_frame_id_ == -1)&&(SCclosest_history_frame_id_ == -1)){
+    return false;
+  }
   return true;
 }
