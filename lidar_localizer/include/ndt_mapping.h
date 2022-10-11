@@ -127,6 +127,7 @@ private:
 
   pcl::VoxelGrid<pcl::PointXYZI> ds_source_;
   pcl::VoxelGrid<pcl::PointXYZI> ds_history_keyframes_;
+  pcl::VoxelGrid<pcl::PointXYZI> downSizeFilterScancontext;
 
 
   // Default values
@@ -199,6 +200,7 @@ private:
   double history_search_radius_; 
   int history_search_num_;
   double history_fitness_score_;
+  double SChistory_fitness_score_;
   double ds_history_size_;
   bool loop_closed_;
   int latest_history_frame_id_;
