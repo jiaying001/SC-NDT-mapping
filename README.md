@@ -15,6 +15,7 @@ Scan Context 原理可参考大神博客：https://www.guyuehome.com/37852
 ## Usage
  ### Input
   - Point Cloud (/velodyne_points)
+  - Odom (optional: used for initial pose guess)
  ### Output
   - /ndt_map
   - /current_pose
